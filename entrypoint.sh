@@ -23,11 +23,18 @@ AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}"
 action=$(jq --raw-output .action "$GITHUB_EVENT_PATH")
 state=$(jq --raw-output .review.state "$GITHUB_EVENT_PATH")
 number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+labels=$(jq --raw-output .pull_request.labels "$GITHUB_EVENT_PATH")
 
 label_when_approved() {
   # https://developer.github.com/v3/pulls/reviews/#list-reviews-on-a-pull-request
   body=$(curl -sSL -H "${AUTH_HEADER}" -H "${API_HEADER}" "${URI}/repos/${GITHUB_REPOSITORY}/pulls/${number}/reviews?per_page=100")
   reviews=$(echo "$body" | jq --raw-output '.[] | {state: .state} | @base64')
+  
+  for l in labels; do
+    if [[l == "${LABEL_NAME}"]]; then
+      exit 0
+    fi
+  done
 
   approvals=0
 
